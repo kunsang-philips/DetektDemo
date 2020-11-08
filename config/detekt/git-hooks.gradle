@@ -1,0 +1,26 @@
+task copyGitHooks(type: Copy) {
+    def repoBasePath = 'git rev-parse --show-toplevel'.execute().text.trim()
+    from("${rootDir}/config/detekt/") {
+        include '**/*.sh'
+        rename '(.*).sh', '$1'
+    }
+
+    into "${repoBasePath}/.git/hooks"
+}
+
+task installGitHooks(type: Exec) {
+    description "Installs Sleep+ pre-commit git hooks"
+    group 'git hooks'
+    workingDir = 'git rev-parse --show-toplevel'.execute().text.trim()
+    commandLine 'chmod'
+    args '-R', '+x', '.git/hooks/'
+    dependsOn copyGitHooks
+    doLast {
+        println('Git hook installed successfully.')
+    }
+}
+
+afterEvaluate {
+    tasks.getByPath(':app:clean').dependsOn installGitHooks
+    tasks.getByPath(':app:preBuild').dependsOn installGitHooks
+}
